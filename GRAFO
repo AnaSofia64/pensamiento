@@ -1,0 +1,353 @@
+import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
+# Diccionario de adyacencias: cada edificio y sus vecinos con distancias
+grafo = {
+    'A': {
+        'B': 55.69, 'C': 54.15, 'K': 246.24, 'H': 207.95, 'Kioscos': 110.32,
+        'P.S': 139.97, 'P.V': 185.85, 'CasaG': 156.23, 'O': 215.79,
+        'F': 222.65, 'Atelier': 242.91, 'G': 514.46, 'D1': 156.21,
+        'CAF': 276.67, 'PingPong': 248.01, 'Mesón': 285.34, 'Biblioteca': 347.54,
+        'Cajero': 337.95, 'Capilla': 399.12, 'AD': 407.45, 'Embarca': 470.11,
+        'E1': 461.70, 'E2': 480.33, 'D2': 301.51
+    },
+    'B': {
+        'A': 55.69, 'C': 60.49, 'K': 176.71, 'H': 157.69, 'Kioscos': 141.09,
+        'P.S': 51.38, 'P.V': 107.38, 'CasaG': 207.56, 'O': 126.44, 'F': 170.87,
+        'Atelier': 196.63, 'D1': 114.90, 'CAF': 223.77, 'PingPong': 211.62,
+        'Mesón': 242.3, 'AD': 378.92, 'Biblioteca': 241.57, 'G': 430.95,
+        'E1': 394.7, 'E2': 415.52, 'Embarca': 367.41, 'Cajero': 218.56,
+        'Capilla': 299.46, 'D2': 224.72
+    },
+    'C': {
+        'A': 54.15, 'B': 60.49, 'K': 215.29, 'H': 200.71, 'Kioscos': 124.00,
+        'P.S': 113.45, 'P.V': 158.93, 'CasaG': 206.55, 'O': 188.96, 'F': 205.56,
+        'Atelier': 246.94, 'D1': 170.83, 'CAF': 238.56, 'PingPong': 209.87,
+        'Mesón': 239.08, 'AD': 478.04, 'Biblioteca': 335.87, 'G': 514.99,
+        'E1': 480.62, 'E2': 507.97, 'Embarca': 449.56, 'Cajero': 304.09,
+        'Capilla': 367.4, 'D2': 302.04
+    },
+    'Biblioteca': {
+        'A': 347.54, 'B': 241.57, 'C': 335.87, 'AD': 143.36, 'Capilla': 119.91,
+        'Cajero': 111.67, 'D1': 124.34, 'D2': 106.11, 'E1': 81.8, 'E2': 102.36,
+        'CasaG': 148.91, 'Embarca': 77.78, 'Mesón': 288.77, 'PingPong': 292.35,
+        'Atelier': 146.43, 'F': 189, 'H': 229.08, 'O': 125.16, 'P.S': 199.02,
+        'P.V': 145.82, 'G': 344.19, 'Kioscos': 335.87, 'K': 389.69
+    },
+    'Capilla': {
+        'A': 399.12, 'B': 299.46, 'AD': 94.23, 'CasaG': 40.01, 'Cajero': 40.27,
+        'G': 181.84, 'D2': 79.0, 'Embarca': 189.19, 'Biblioteca': 119.91,
+        'E1': 201.43, 'E2': 216.95, 'H': 275.43, 'Kioscos': 414.7, 'O': 139,
+        'P.S': 210.44, 'P.V': 171.64
+    },
+    'CAF': {
+        'PingPong': 66.04,
+        'Mesón': 56.76,
+        'D1': 229.26
+    },
+
+    'D1': {
+        'P.S': 72.71,
+        'P.V': 44.32,
+        'H': 120.09,
+        'F': 160.25,
+        'Atelier': 160.73,
+        'CasaG': 86.16,
+        'CAF': 229.26,
+        'PingPong': 253.2,
+        'Mesón': 266.18,
+        'AD': 324.92,
+        'Biblioteca': 124.34,
+        'G': 323.35,
+        'E1': 285.77,
+        'E2': 302.6,
+        'Embarca': 267.35,
+        'Cajero': 55.33,
+        'Capilla': 118.3,
+        'A': 156.21,
+        'B': 114.9,
+        'C': 170.83
+    },
+
+    'D2': {
+        'D1': 47.87,
+        'E1': 170.48,
+        'E2': 195.43,
+        'Biblioteca': 106.11,
+        'Embarca': 183.55,
+        'CasaG': 86.16,
+        'A': 301.51,
+        'B': 224.72,
+        'C': 302.04,
+        'AD': 173.86,
+        'Capilla': 79.0,
+        'Cajero': 42.72
+    },
+
+    'E1': {
+        'E2': 31.2,
+        'Embarca': 47.61,
+        'Biblioteca': 81.8,
+        'CasaG': 228.85,
+        'A': 461.7,
+        'B': 394.7,
+        'C': 480.62,
+        'Capilla': 201.43,
+        'Cajero': 187.66,
+        'D1': 285.77,
+        'D2': 170.48
+    },
+
+    'E2': {
+        'Embarca': 44.82,
+        'Biblioteca': 102.36,
+        'CasaG': 245.34,
+        'A': 480.33,
+        'B': 415.52,
+        'C': 507.97,
+        'Capilla': 216.95,
+        'Cajero': 209.13,
+        'D1': 302.6,
+        'D2': 195.43
+    },
+
+    'G': {
+        'D2': 338.26,
+        'E1': 154.75,
+        'E2': 155.81,
+        'Embarca': 56.86,
+        'Biblioteca': 344.19,
+        'CasaG': 220.55,
+        'A': 514.46,
+        'B': 430.95,
+        'C': 514.99,
+        'Capilla': 181.84,
+        'Cajero': 192.47,
+        'AD': 214.86,
+        'D1': 323.35
+    },
+    'H': {
+        'F': 44.88, 'Atelier': 32.93, 'AD': 461.98, 'Biblioteca': 229.08,
+        'G': 277.4, 'E1': 241.73, 'E2': 259.8, 'Embarca': 216.79,
+        'Cajero': 221.42, 'Capilla': 275.43, 'D2': 275.43,
+        'A': 207.95, 'B': 157.69, 'C': 200.71, 'D1': 120.09, 'O': 75.67
+    },
+
+    'K': {
+        'H': 291.73, 'AD': 106.42, 'Kioscos': 175.92, 'P.S': 183.66,
+        'P.V': 206.63, 'CasaG': 110.85, 'O': 219.74, 'F': 333.25,
+        'Atelier': 329.98, 'D1': 178.75, 'CAF': 387.89, 'PingPong': 307.5,
+        'Mesón': 417.17, 'Biblioteca': 389.69, 'G': 431.35, 'E1': 471.62,
+        'E2': 493.5, 'Embarca': 459.06, 'Cajero': 242.91, 'Capilla': 260,
+        'D2': 291.28, 'A': 246.24, 'B': 176.71, 'C': 215.29
+    },
+
+   'Kioscos': {
+        'P.V': 238.5, 'P.S': 180.82, 'CasaG': 239.27, 'Atelier': 337.84,
+        'D1': 242.07, 'H': 294.32, 'F': 313.41, 'CAF': 349.65,
+        'PingPong': 332.77, 'Mesón': 355.44, 'AD': 533.41, 'Biblioteca': 335.87,
+        'G': 568.01, 'E1': 539.17, 'E2': 569.76, 'Embarca': 511.6,
+        'Cajero': 357.02, 'Capilla': 414.7, 'D2': 338.02, 'A': 110.32, 'B': 141.09, 'C': 124.00
+    },
+
+    'O': {
+        'P.S': 76.76, 'P.V': 26.46, 'H': 75.67, 'F': 120.04,
+        'Atelier': 112.5, 'D1': 32.94, 'CAF': 194.23, 'PingPong': 233.65,
+        'Mesón': 232.46, 'AD': 360.51, 'Biblioteca': 125.16, 'G': 318.7,
+        'E1': 261.63, 'E2': 291.09, 'Embarca': 260.76, 'Cajero': 78.74,
+        'Capilla': 139, 'D2': 84.81, 'A': 215.79, 'B': 126.44, 'C': 188.96
+    },
+
+    'PingPong': {
+        'Mesón': 43.3,
+        'CAF': 66.04,
+        'D1': 253.2,
+        'C': 209.87,
+        'B': 211.62,
+        'A': 248.01,
+        'PV': 207.94,
+        'PS': 208.53,
+        'O': 233.65,
+        'F': 100.72,
+        'K': 307.5,
+        'Kioscos': 332.77,
+        'Capilla': 144.05,
+        'Cajero': 292.35,
+        'G': 385.42,
+        'Embarca': 333.56,
+        'E1': 308.11,
+        'E2': 290.16,
+        'Atelier': 143.83
+    },
+
+    'P.V': {
+        'P.S': 55.31,
+        'H': 88.31,
+        'F': 128.9,
+        'Atelier': 128.66,
+        'CAF': 193.5,
+        'PingPong': 207.94,
+        'Mesón': 228.8,
+        'AD': 379.62,
+        'Biblioteca': 145.82,
+        'G': 325.64,
+        'E1': 267.83,
+        'E2': 312.85,
+        'Embarca': 267.82,
+        'Cajero': 105.25,
+        'Capilla': 171.64,
+        'D2': 83.15,
+        'A': 185.85,
+        'B': 107.38,
+        'C': 158.93,
+        'O': 26.46,
+        'Kioscos': 238.5
+    },
+
+    'P.S': {
+        'H': 116.82,
+        'F': 151.56,
+        'Atelier': 155.02,
+        'CAF': 202.97,
+        'PingPong': 208.53,
+        'Mesón': 234.82,
+        'AD': 348.09,
+        'Biblioteca': 199.02,
+        'G': 369.85,
+        'E1': 323.89,
+        'E2': 345.71,
+        'Embarca': 330.5,
+        'Cajero': 158.3,
+        'Capilla': 210.44,
+        'D2': 148.65,
+        'A': 139.97,
+        'B': 51.38,
+        'C': 113.45,
+        'O': 76.76,
+        'K': 183.66,
+        'Kioscos': 180.82
+    }
+}
+def visualizar_grafo(grafo):
+    G = nx.Graph()
+
+    for nodo, vecinos in grafo.items():
+        for vecino, peso in vecinos.items():
+            G.add_edge(nodo, vecino, weight=peso)
+
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(16, 10))
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=1500, font_size=9)
+    etiquetas = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas, font_size=7)
+    plt.title("Mapa de la Universidad")
+    plt.show()
+
+def camino_mas_corto(grafo, inicio, destino):
+    heap = [(0, inicio, [])]
+    visitados = set()
+
+    while heap:
+        (dist, actual, camino) = heapq.heappop(heap)
+        if actual in visitados:
+            continue
+        camino = camino + [actual]
+        if actual == destino:
+            return (dist, camino)
+        visitados.add(actual)
+        for vecino, peso in grafo.get(actual, {}).items():
+            if vecino not in visitados:
+                heapq.heappush(heap, (dist + peso, vecino, camino))
+
+    return (float('inf'), [])
+
+
+def mostrar_resultado():
+    origen = entrada_origen.get()
+    destino = entrada_destino.get()
+
+    if origen not in grafo or destino not in grafo:
+        resultado.set("Origen o destino no válido.")
+        return
+
+    # Búsqueda de camino más corto usando BFS
+    from collections import deque
+
+    visitados = set()
+    cola = deque([[origen]])
+
+    while cola:
+        camino = cola.popleft()
+        nodo = camino[-1]
+
+        if nodo == destino:
+            resultado.set(" → ".join(camino))
+            return
+
+        if nodo not in visitados:
+            visitados.add(nodo)
+            for vecino in grafo[nodo]:
+                nuevo_camino = list(camino)
+                nuevo_camino.append(vecino)
+                cola.append(nuevo_camino)
+
+    resultado.set("No hay camino entre los edificios.")
+    
+def visualizar_grafo_en_tkinter(grafo, frame):
+    G = nx.Graph()
+    for nodo, vecinos in grafo.items():
+        for vecino in vecinos:
+            G.add_edge(nodo, vecino)
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, ax=ax, node_color='lightgreen', node_size=600, font_size=10)
+
+    canvas = FigureCanvasTkAgg(fig, master=frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+
+
+app = tk.Tk()
+app.title("Buscador de Caminos")
+app.geometry("400x250")
+
+tk.Label(app, text="Edificio Origen:").pack()
+entrada_origen = tk.Entry(app)
+entrada_origen.pack()
+
+tk.Label(app, text="Edificio Destino:").pack()
+entrada_destino = tk.Entry(app)
+entrada_destino.pack()
+
+tk.Label(app, text="Edificios disponibles:").pack()
+tk.Label(app, text=", ".join(grafo.keys()), wraplength=350, fg="blue").pack()
+
+
+tk.Button(app, text="Buscar camino más corto", command=mostrar_resultado).pack(pady=10)
+
+resultado = tk.StringVar()
+tk.Label(app, textvariable=resultado, wraplength=350, justify="left").pack()
+
+frame_grafo = tk.Frame(app)
+frame_grafo.pack(pady=10)
+visualizar_grafo_en_tkinter(grafo, frame_grafo)
+
+
+
+app.mainloop()
+
+
+# Ejemplo de uso
+origen = 'Edificio A'
+destino = 'Edificio D'
+distancia, ruta = camino_mas_corto(grafo, origen, destino)
+print(f"Distancia más corta de {origen} a {destino}: {distancia}")
+print("Ruta:", " -> ".join(ruta))
+
+
